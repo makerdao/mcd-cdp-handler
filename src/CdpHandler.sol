@@ -4,16 +4,33 @@ import "ds-proxy/proxy.sol";
 
 contract CdpHandler is DSProxy {
     CdpRegistry public registry;
+    mapping(address => mapping(address => bool)) allowance;
+
+    event Approval(address indexed src, address indexed guy, bool status);
 
     constructor(DSProxyCache _cacheAddr, address _owner) public DSProxy(_cacheAddr) {
         registry = CdpRegistry(msg.sender);
         owner = _owner;
     }
 
-    // Overwirtes setOwner method be executed only by the registry
+    modifier auth {
+        require(isAuthorized(msg.sender, msg.sig) || allowance[this.owner()][msg.sender], "No rights to execute this action");
+        _;
+    }
+
     function setOwner(address owner_) public {
         registry.setOwner(owner_);
         super.setOwner(owner_);
+    }
+
+    function rely(address guy) public {
+        allowance[msg.sender][guy] = true;
+        emit Approval(msg.sender, guy, true);
+    }
+
+    function deny(address guy) public {
+        allowance[msg.sender][guy] = false;
+        emit Approval(msg.sender, guy, false);
     }
 }
 

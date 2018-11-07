@@ -36,17 +36,25 @@ contract MaliciousHandler is CdpHandler {
     }
 }
 
+contract FakeUser {
+    function doSetOwner(CdpHandler handler, address newOwner) public {
+        handler.setOwner(newOwner);
+    }
+}
+
 contract CdpHandlerTest is DssDeployTest, ProxyCalls {
     CdpRegistry registry;
+    FakeUser user;
 
     function setUp() public {
         super.setUp();
         lib = new CdpLib();
         registry = new CdpRegistry();
         handler = registry.create();
+        user = new FakeUser();
     }
 
-    function testCDPHandlerCreateMultipleHandlers() public {
+    function testCdpHandlerCreateMultipleHandlers() public {
         assertEq(registry.getCount(this), 1);
         registry.create();
         assertEq(registry.getCount(this), 2);
@@ -54,7 +62,7 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         assertEq(registry.getCount(this), 3);
     }
 
-    function testCDPHandlerCreateMultipleHandlers2() public {
+    function testCdpHandlerCreateMultipleHandlers2() public {
         assertEq(registry.getCount(this), 1);
         handler = registry.create();
         assertEq(registry.getCount(this), 2);
@@ -63,7 +71,7 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         assertEq(registry.getCount(this), 3);
     }
 
-    function testCDPHandlerTransferOwnership() public {
+    function testCdpHandlerTransferOwnership() public {
         assertEq(handler.owner(), this);
         assertEq(registry.cdps(this, 0).owner(), this);
         handler.setOwner(address(123));
@@ -72,26 +80,42 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         assertEq(registry.cdps(address(123), 0).owner(), address(123));
     }
 
-    function testFailCDPHandlerTransferOwnershipNotInRegistry() public {
+    function testFailCdpHandlerTransferOwnershipNotInRegistry() public {
         handler = new MaliciousHandler(registry);
         handler.setOwner(address(123));
     }
 
-    function testCDPHandlerJoinCollateral() public {
+    function testCdpHandlerTransferFromOwnership() public {
+        handler.rely(user);
+        user.doSetOwner(handler, address(123));
+        assertEq(handler.owner(), address(123));
+    }
+
+    function testFailCdpHandlerTransferFromOwnership() public {
+        user.doSetOwner(handler, address(123));
+    }
+
+    function testFailCdpHandlerTransferFromOwnership2() public {
+        handler.rely(user);
+        handler.deny(user);
+        user.doSetOwner(handler, address(123));
+    }
+
+    function testCdpHandlerJoinCollateral() public {
         deploy();
         assertEq(vat.gem("ETH", bytes32(address(handler))), 0);
         this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
         assertEq(vat.gem("ETH", bytes32(address(handler))), mul(ONE, 1 ether));
     }
 
-    function testCDPHandlerExitCollateral() public {
+    function testCdpHandlerExitCollateral() public {
         deploy();
         this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
         this.ethJoin_exit(ethJoin, address(handler), 1 ether);
         assertEq(vat.gem("ETH", bytes32(address(handler))), 0);
     }
 
-    function testCDPHandlerDrawDai() public {
+    function testCdpHandlerDrawDai() public {
         deploy();
         assertEq(dssDeploy.dai().balanceOf(address(handler)), 0);
         this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
@@ -105,7 +129,7 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         assertEq(vat.dai(bytes32(address(this))), 0);
     }
 
-    function testCDPHandlerPaybackDai() public {
+    function testCdpHandlerPaybackDai() public {
         deploy();
         this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
         this.frob(pit, "ETH", 0.5 ether, 60 ether);
