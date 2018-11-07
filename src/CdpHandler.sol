@@ -12,14 +12,15 @@ contract CdpHandler is DSProxy {
 
     // Overwirtes setOwner method be executed only by the registry
     function setOwner(address owner_) public {
-        require(msg.sender == address(registry), "Only registry can set new owner");
-        owner = owner_;
-        emit LogSetOwner(owner);
+        registry.setOwner(owner_);
+        super.setOwner(owner_);
     }
 }
 
 contract CdpRegistry is DSProxyFactory {
     mapping(address => CdpHandler[]) public cdps;
+    mapping(address => uint) public pos;
+    mapping(address => bool) public inRegistry;
 
     function getCount(address owner) public view returns (uint count) {
         count = cdps[owner].length;
@@ -28,13 +29,15 @@ contract CdpRegistry is DSProxyFactory {
     function create() public returns (CdpHandler handler) {
         handler = new CdpHandler(cache, msg.sender);
         cdps[msg.sender].push(handler);
+        pos[handler] = cdps[msg.sender].length - 1;
+        inRegistry[handler] = true;
     }
 
-    function setOwner(uint pos, address newOwner) public {
-        CdpHandler handler = cdps[msg.sender][pos];
-        require(handler != address(0), "Handler doesn't exist");
-        handler.setOwner(newOwner);
-        delete cdps[msg.sender][pos]; // Check this
-        cdps[newOwner].push(handler);
+    function setOwner(address owner_) public {
+        require(inRegistry[msg.sender], "Sender is not a CdpHandler from the Registry");
+        CdpHandler handler = CdpHandler(msg.sender);
+        delete cdps[handler.owner()][pos[handler]];
+        cdps[owner_].push(handler);
+        pos[handler] = cdps[owner_].length - 1;
     }
 }

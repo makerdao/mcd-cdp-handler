@@ -28,7 +28,13 @@ contract ProxyCalls {
     function frob(address, bytes32, int, int) public {
         handler.execute(lib, msg.data);
     }
-} 
+}
+
+contract MaliciousHandler is CdpHandler {
+    constructor(address registry_) public CdpHandler(DSProxyFactory(registry_).cache(), msg.sender) {
+        registry = CdpRegistry(registry_);
+    }
+}
 
 contract CdpHandlerTest is DssDeployTest, ProxyCalls {
     CdpRegistry registry;
@@ -50,9 +56,9 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
 
     function testCDPHandlerCreateMultipleHandlers2() public {
         assertEq(registry.getCount(this), 1);
-        registry.create();
+        handler = registry.create();
         assertEq(registry.getCount(this), 2);
-        registry.setOwner(1, address(123));
+        handler.setOwner(address(123));
         registry.create();
         assertEq(registry.getCount(this), 3);
     }
@@ -60,13 +66,14 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
     function testCDPHandlerTransferOwnership() public {
         assertEq(handler.owner(), this);
         assertEq(registry.cdps(this, 0).owner(), this);
-        registry.setOwner(0, address(123));
+        handler.setOwner(address(123));
         assertEq(handler.owner(), address(123));
         assertEq(registry.cdps(this, 0), address(0));
         assertEq(registry.cdps(address(123), 0).owner(), address(123));
     }
 
-    function testFailCDPHandlerTransferOwnershipDirectly() public {
+    function testFailCDPHandlerTransferOwnershipNotInRegistry() public {
+        handler = new MaliciousHandler(registry);
         handler.setOwner(address(123));
     }
 
