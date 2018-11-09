@@ -13,15 +13,15 @@ contract ProxyCalls {
         assert(address(handler).call.value(msg.value)(bytes4(keccak256("execute(address,bytes)")), lib, uint256(0x40), msg.data.length, msg.data));
     }
 
-    function ethJoin_exit(address, address, uint) public payable {
+    function ethJoin_exit(address, address, uint) public {
         handler.execute(lib, msg.data);
     }
 
-    function daiJoin_join(address, bytes32, uint) public payable {
+    function daiJoin_join(address, bytes32, uint) public {
         handler.execute(lib, msg.data);
     }
 
-    function daiJoin_exit(address, address, uint) public payable {
+    function daiJoin_exit(address, address, uint) public {
         handler.execute(lib, msg.data);
     }
 
