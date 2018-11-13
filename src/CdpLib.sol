@@ -10,6 +10,12 @@ contract ETHJoinLike {
     function exit(address, uint) public;
 }
 
+contract GemJoinLike {
+    function gem() public returns (GemLike);
+    function join(bytes32, uint) public payable;
+    function exit(address, uint) public;
+}
+
 contract DaiJoinLike {
     function dai() public returns (GemLike);
     function join(bytes32, uint) public payable;
@@ -29,9 +35,19 @@ contract CdpLib {
         ETHJoinLike(apt).exit(guy, wad);
     }
 
+    function gemJoin_join(address apt, bytes32 urn, uint wad) public payable {
+        GemJoinLike(apt).gem().transferFrom(msg.sender, this, wad);
+        GemJoinLike(apt).gem().approve(apt, uint(-1));
+        GemJoinLike(apt).join(urn, wad);
+    }
+
+    function gemJoin_exit(address apt, address guy, uint wad) public {
+        GemJoinLike(apt).exit(guy, wad);
+    }
+
     function daiJoin_join(address apt, bytes32 urn, uint wad) public {
         DaiJoinLike(apt).dai().transferFrom(msg.sender, this, wad);
-        DaiJoinLike(apt).dai().approve(DaiJoinLike(apt), uint(-1));
+        DaiJoinLike(apt).dai().approve(apt, uint(-1));
         DaiJoinLike(apt).join(urn, wad);
     }
 

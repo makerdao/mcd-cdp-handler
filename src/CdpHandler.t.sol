@@ -17,6 +17,14 @@ contract ProxyCalls {
         handler.execute(lib, msg.data);
     }
 
+    function gemJoin_join(address, bytes32, uint) public {
+        handler.execute(lib, msg.data);
+    }
+
+    function gemJoin_exit(address, address, uint) public {
+        handler.execute(lib, msg.data);
+    }
+
     function daiJoin_join(address, bytes32, uint) public {
         handler.execute(lib, msg.data);
     }
@@ -101,31 +109,53 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         user.doSetOwner(handler, address(123));
     }
 
-    function testCdpHandlerJoinCollateral() public {
+    function testCdpHandlerJoinETH() public {
         deploy();
         assertEq(vat.gem("ETH", bytes32(address(handler))), 0);
         this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
         assertEq(vat.gem("ETH", bytes32(address(handler))), mul(ONE, 1 ether));
     }
 
-    function testCdpHandlerExitCollateral() public {
+    function testCdpHandlerJoinERC20() public {
+        deploy();
+        dgx.mint(1 ether);
+        assertEq(dgx.balanceOf(this), 1 ether);
+        assertEq(vat.gem("DGX", bytes32(address(handler))), 0);
+        dgx.approve(handler, 1 ether);
+        this.gemJoin_join(dgxJoin, bytes32(address(handler)), 1 ether);
+        assertEq(dgx.balanceOf(this), 0);
+        assertEq(vat.gem("DGX", bytes32(address(handler))), mul(ONE, 1 ether));
+    }
+
+    function testCdpHandlerExitETH() public {
         deploy();
         this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
         this.ethJoin_exit(ethJoin, address(handler), 1 ether);
         assertEq(vat.gem("ETH", bytes32(address(handler))), 0);
     }
 
+    function testCdpHandlerExitERC20() public {
+        deploy();
+        dgx.mint(1 ether);
+        dgx.approve(dgxJoin, 1 ether);
+        dgx.approve(handler, 1 ether);
+        this.gemJoin_join(dgxJoin, bytes32(address(handler)), 1 ether);
+        this.gemJoin_exit(dgxJoin, address(handler), 1 ether);
+        assertEq(dgx.balanceOf(handler), 1 ether);
+        assertEq(vat.gem("DGX", bytes32(address(handler))), 0);
+    }
+
     function testCdpHandlerDrawDai() public {
         deploy();
-        assertEq(dssDeploy.dai().balanceOf(address(handler)), 0);
+        assertEq(dai.balanceOf(address(handler)), 0);
         this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
 
         this.frob(pit, "ETH", 0.5 ether, 60 ether);
         assertEq(vat.gem("ETH", bytes32(address(handler))), mul(ONE, 0.5 ether));
         assertEq(vat.dai(bytes32(address(handler))), mul(ONE, 60 ether));
 
-        this.daiJoin_exit(dssDeploy.daiJoin(), address(this), 60 ether);
-        assertEq(dssDeploy.dai().balanceOf(address(this)), 60 ether);
+        this.daiJoin_exit(daiJoin, address(this), 60 ether);
+        assertEq(dai.balanceOf(address(this)), 60 ether);
         assertEq(vat.dai(bytes32(address(this))), 0);
     }
 
@@ -133,11 +163,11 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         deploy();
         this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
         this.frob(pit, "ETH", 0.5 ether, 60 ether);
-        this.daiJoin_exit(dssDeploy.daiJoin(), address(this), 60 ether);
-        assertEq(dssDeploy.dai().balanceOf(address(this)), 60 ether);
-        dssDeploy.dai().approve(handler, uint(-1));
-        this.daiJoin_join(dssDeploy.daiJoin(), bytes32(address(handler)), 60 ether);
-        assertEq(dssDeploy.dai().balanceOf(address(this)), 0);
+        this.daiJoin_exit(daiJoin, address(this), 60 ether);
+        assertEq(dai.balanceOf(address(this)), 60 ether);
+        dai.approve(handler, uint(-1));
+        this.daiJoin_join(daiJoin, bytes32(address(handler)), 60 ether);
+        assertEq(dai.balanceOf(address(this)), 0);
 
         assertEq(vat.dai(bytes32(address(handler))), mul(ONE, 60 ether));
         this.frob(pit, "ETH", 0 ether, -60 ether);
