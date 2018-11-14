@@ -50,11 +50,6 @@ contract FakeUser {
     }
 }
 
-contract CdpAuthorityLike {
-    function rely(address) public;
-    function deny(address) public;
-}
-
 contract CdpHandlerTest is DssDeployTest, ProxyCalls {
     CdpRegistry registry;
     FakeUser user;
@@ -99,7 +94,7 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
     }
 
     function testCdpHandlerTransferFromOwnership() public {
-        CdpAuthorityLike(handler.authority()).rely(user);
+        handler.rely(user);
         user.doSetOwner(handler, address(123));
         assertEq(handler.owner(), address(123));
     }
@@ -109,8 +104,8 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
     }
 
     function testFailCdpHandlerTransferFromOwnership2() public {
-        CdpAuthorityLike(handler.authority()).rely(user);
-        CdpAuthorityLike(handler.authority()).deny(user);
+        handler.rely(user);
+        handler.deny(user);
         user.doSetOwner(handler, address(123));
     }
 
