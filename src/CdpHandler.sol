@@ -4,7 +4,6 @@ import "ds-proxy/proxy.sol";
 
 contract CdpHandler is DSProxy {
     CdpRegistry public registry;
-    mapping(address => mapping(address => bool)) allowance;
 
     event Approval(address indexed src, address indexed guy, bool status);
 
@@ -13,24 +12,9 @@ contract CdpHandler is DSProxy {
         owner = _owner;
     }
 
-    modifier auth {
-        require(isAuthorized(msg.sender, msg.sig) || allowance[this.owner()][msg.sender], "No rights to execute this action");
-        _;
-    }
-
     function setOwner(address owner_) public {
         registry.setOwner(owner_);
         super.setOwner(owner_);
-    }
-
-    function rely(address guy) public {
-        allowance[msg.sender][guy] = true;
-        emit Approval(msg.sender, guy, true);
-    }
-
-    function deny(address guy) public {
-        allowance[msg.sender][guy] = false;
-        emit Approval(msg.sender, guy, false);
     }
 }
 

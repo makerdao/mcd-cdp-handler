@@ -3,6 +3,8 @@ pragma solidity ^0.4.24;
 import {DssDeployTest} from "dss-deploy/DssDeploy.t.sol";
 
 import "./CdpHandler.sol";
+import "./CdpAuthority.sol";
+
 import {CdpLib, GemLike} from "./CdpLib.sol";
 
 contract ProxyCalls {
@@ -94,7 +96,8 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
     }
 
     function testCdpHandlerTransferFromOwnership() public {
-        handler.rely(user);
+        handler.setAuthority(new CdpAuthority());
+        CdpAuthority(handler.authority()).rely(user);
         user.doSetOwner(handler, address(123));
         assertEq(handler.owner(), address(123));
     }
@@ -104,8 +107,9 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
     }
 
     function testFailCdpHandlerTransferFromOwnership2() public {
-        handler.rely(user);
-        handler.deny(user);
+        handler.setAuthority(new CdpAuthority());
+        CdpAuthority(handler.authority()).rely(user);
+        CdpAuthority(handler.authority()).deny(user);
         user.doSetOwner(handler, address(123));
     }
 
