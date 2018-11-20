@@ -29,8 +29,7 @@ contract CdpRegistry is DSProxyFactory {
 
     function create() public returns (CdpHandler handler) {
         handler = new CdpHandler(cache, msg.sender);
-        handlers[msg.sender].push(handler);
-        pos[handler] = handlers[msg.sender].length - 1;
+        pos[handler] = handlers[msg.sender].push(handler) - 1;
         inRegistry[handler] = true;
     }
 
@@ -38,7 +37,6 @@ contract CdpRegistry is DSProxyFactory {
         require(inRegistry[msg.sender], "Sender is not a CdpHandler from the Registry");
         CdpHandler handler = CdpHandler(msg.sender);
         delete handlers[handler.owner()][pos[handler]];
-        handlers[owner_].push(handler);
-        pos[handler] = handlers[owner_].length - 1;
+        pos[handler] = handlers[owner_].push(handler) - 1;
     }
 }
