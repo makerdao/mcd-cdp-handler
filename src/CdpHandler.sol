@@ -19,26 +19,26 @@ contract CdpHandler is DSProxy {
 }
 
 contract CdpRegistry is DSProxyFactory {
-    mapping(address => CdpHandler[]) public cdps;
+    mapping(address => CdpHandler[]) public handlers;
     mapping(address => uint) public pos;
     mapping(address => bool) public inRegistry;
 
     function getCount(address owner) public view returns (uint count) {
-        count = cdps[owner].length;
+        count = handlers[owner].length;
     }
 
     function create() public returns (CdpHandler handler) {
         handler = new CdpHandler(cache, msg.sender);
-        cdps[msg.sender].push(handler);
-        pos[handler] = cdps[msg.sender].length - 1;
+        handlers[msg.sender].push(handler);
+        pos[handler] = handlers[msg.sender].length - 1;
         inRegistry[handler] = true;
     }
 
     function setOwner(address owner_) public {
         require(inRegistry[msg.sender], "Sender is not a CdpHandler from the Registry");
         CdpHandler handler = CdpHandler(msg.sender);
-        delete cdps[handler.owner()][pos[handler]];
-        cdps[owner_].push(handler);
-        pos[handler] = cdps[owner_].length - 1;
+        delete handlers[handler.owner()][pos[handler]];
+        handlers[owner_].push(handler);
+        pos[handler] = handlers[owner_].length - 1;
     }
 }

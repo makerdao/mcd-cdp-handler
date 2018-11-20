@@ -83,11 +83,11 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
 
     function testCdpHandlerTransferOwnership() public {
         assertEq(handler.owner(), this);
-        assertEq(registry.cdps(this, 0).owner(), this);
+        assertEq(registry.handlers(this, 0).owner(), this);
         handler.setOwner(address(123));
         assertEq(handler.owner(), address(123));
-        assertEq(registry.cdps(this, 0), address(0));
-        assertEq(registry.cdps(address(123), 0).owner(), address(123));
+        assertEq(registry.handlers(this, 0), address(0));
+        assertEq(registry.handlers(address(123), 0).owner(), address(123));
     }
 
     function testFailCdpHandlerTransferOwnershipNotInRegistry() public {
