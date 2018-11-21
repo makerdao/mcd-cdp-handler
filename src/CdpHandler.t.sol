@@ -41,7 +41,7 @@ contract ProxyCalls {
 }
 
 contract MaliciousHandler is CdpHandler {
-    constructor(address registry_) public CdpHandler(DSProxyFactory(registry_).cache(), msg.sender) {
+    constructor(address registry_) public CdpHandler(registry_, msg.sender) {
         registry = CdpRegistry(registry_);
     }
 }

@@ -7,8 +7,8 @@ contract CdpHandler is DSProxy {
 
     event Approval(address indexed src, address indexed guy, bool status);
 
-    constructor(DSProxyCache _cacheAddr, address _owner) public DSProxy(_cacheAddr) {
-        registry = CdpRegistry(msg.sender);
+    constructor(address _registry, address _owner) public DSProxy(CdpRegistry(_registry).cache()) {
+        registry = CdpRegistry(_registry);
         owner = _owner;
     }
 
@@ -28,7 +28,7 @@ contract CdpRegistry is DSProxyFactory {
     }
 
     function create() public returns (CdpHandler handler) {
-        handler = new CdpHandler(cache, msg.sender);
+        handler = new CdpHandler(this, msg.sender);
         pos[handler] = handlers[msg.sender].push(handler) - 1;
         inRegistry[handler] = true;
     }
