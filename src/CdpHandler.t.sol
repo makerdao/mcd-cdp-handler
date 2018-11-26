@@ -60,29 +60,29 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         super.setUp();
         lib = new CdpLib();
         registry = new CdpRegistry();
-        handler = CdpHandler(registry.create());
+        handler = CdpHandler(registry.build());
         user = new FakeUser();
     }
 
     function testCdpHandlerCreateMultipleHandlers() public {
         assertEq(registry.getCount(this), 1);
-        CdpHandler(registry.create());
+        CdpHandler(registry.build());
         assertEq(registry.getCount(this), 2);
-        CdpHandler(registry.create());
+        CdpHandler(registry.build());
         assertEq(registry.getCount(this), 3);
     }
 
     function testCdpHandlerCreateMultipleHandlers2() public {
         assertEq(registry.getCount(this), 1);
-        handler = CdpHandler(registry.create());
+        handler = CdpHandler(registry.build());
         assertEq(registry.getCount(this), 2);
         handler.setOwner(address(123));
-        CdpHandler(registry.create());
+        CdpHandler(registry.build());
         assertEq(registry.getCount(this), 3);
     }
 
     function testCdpHandlerCreateHandlerForOtherAddress() public {
-        handler = CdpHandler(registry.create(address(123)));
+        handler = CdpHandler(registry.build(address(123)));
         assertEq(handler.owner(), address(123));
         assertEq(registry.handlers(address(123), 0), handler);
     }

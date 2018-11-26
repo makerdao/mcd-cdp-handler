@@ -27,11 +27,11 @@ contract CdpRegistry is DSProxyFactory {
         count = handlers[owner].length;
     }
 
-    function create() public returns (address handler) { // To be replaced by build()
-        handler = create(msg.sender);
+    function build() public returns (address handler) {
+        handler = build(msg.sender);
     }
 
-    function create(address owner) public returns (address handler) { // To be replaced by build(address owner)
+    function build(address owner) public returns (address handler) {
         handler = new CdpHandler(this, owner);
         pos[handler] = handlers[owner].push(CdpHandler(handler)) - 1;
         inRegistry[handler] = true;
