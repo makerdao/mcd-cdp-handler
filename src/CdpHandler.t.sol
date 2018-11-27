@@ -170,7 +170,7 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         assertEq(vat.gem("ETH", bytes32(address(handler))), mul(ONE, 1 ether));
     }
 
-    function testCdpHandlerJoinERC20() public {
+    function testCdpHandlerJoinGem() public {
         deploy();
         dgx.mint(1 ether);
         assertEq(dgx.balanceOf(this), 1 ether);
@@ -188,7 +188,7 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         assertEq(vat.gem("ETH", bytes32(address(handler))), 0);
     }
 
-    function testCdpHandlerExitERC20() public {
+    function testCdpHandlerExitGem() public {
         deploy();
         dgx.mint(1 ether);
         dgx.approve(dgxJoin, 1 ether);
@@ -199,7 +199,7 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         assertEq(vat.gem("DGX", bytes32(address(handler))), 0);
     }
 
-    function testCdpHandlerDrawDai() public {
+    function testCdpHandlerFrobDraw() public {
         deploy();
         assertEq(dai.balanceOf(address(handler)), 0);
         this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
@@ -213,7 +213,7 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         assertEq(vat.dai(bytes32(address(this))), 0);
     }
 
-    function testCdpHandlerPaybackDai() public {
+    function testCdpHandlerFrobWipe() public {
         deploy();
         this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
         this.frob(pit, "ETH", 0.5 ether, 60 ether);
