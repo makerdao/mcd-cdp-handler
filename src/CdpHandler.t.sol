@@ -35,7 +35,7 @@ contract ProxyCalls {
         handler.execute(lib, msg.data);
     }
 
-    function frob(address, bytes32, int, int) public {
+    function frob(address, bytes32, bytes32, int, int) public {
         handler.execute(lib, msg.data);
     }
 
@@ -165,27 +165,27 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
 
     function testCdpHandlerJoinETH() public {
         deploy();
-        assertEq(vat.gem("ETH", bytes32(address(handler))), 0);
-        this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
-        assertEq(vat.gem("ETH", bytes32(address(handler))), mul(ONE, 1 ether));
+        assertEq(vat.gem("ETH", bytes32(uint(address(handler)))), 0);
+        this.ethJoin_join.value(1 ether)(ethJoin, bytes32(uint(address(handler))));
+        assertEq(vat.gem("ETH", bytes32(uint(address(handler)))), mul(ONE, 1 ether));
     }
 
     function testCdpHandlerJoinGem() public {
         deploy();
         dgx.mint(1 ether);
         assertEq(dgx.balanceOf(this), 1 ether);
-        assertEq(vat.gem("DGX", bytes32(address(handler))), 0);
+        assertEq(vat.gem("DGX", bytes32(uint(address(handler)))), 0);
         dgx.approve(handler, 1 ether);
-        this.gemJoin_join(dgxJoin, bytes32(address(handler)), 1 ether);
+        this.gemJoin_join(dgxJoin, bytes32(uint(address(handler))), 1 ether);
         assertEq(dgx.balanceOf(this), 0);
-        assertEq(vat.gem("DGX", bytes32(address(handler))), mul(ONE, 1 ether));
+        assertEq(vat.gem("DGX", bytes32(uint(address(handler)))), mul(ONE, 1 ether));
     }
 
     function testCdpHandlerExitETH() public {
         deploy();
-        this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
+        this.ethJoin_join.value(1 ether)(ethJoin, bytes32(uint(address(handler))));
         this.ethJoin_exit(ethJoin, address(handler), 1 ether);
-        assertEq(vat.gem("ETH", bytes32(address(handler))), 0);
+        assertEq(vat.gem("ETH", bytes32(uint(address(handler)))), 0);
     }
 
     function testCdpHandlerExitGem() public {
@@ -193,20 +193,20 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         dgx.mint(1 ether);
         dgx.approve(dgxJoin, 1 ether);
         dgx.approve(handler, 1 ether);
-        this.gemJoin_join(dgxJoin, bytes32(address(handler)), 1 ether);
+        this.gemJoin_join(dgxJoin, bytes32(uint(address(handler))), 1 ether);
         this.gemJoin_exit(dgxJoin, address(handler), 1 ether);
         assertEq(dgx.balanceOf(handler), 1 ether);
-        assertEq(vat.gem("DGX", bytes32(address(handler))), 0);
+        assertEq(vat.gem("DGX", bytes32(uint(address(handler)))), 0);
     }
 
     function testCdpHandlerFrobDraw() public {
         deploy();
         assertEq(dai.balanceOf(address(handler)), 0);
-        this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
+        this.ethJoin_join.value(1 ether)(ethJoin, bytes32(uint(address(handler))));
 
-        this.frob(pit, "ETH", 0.5 ether, 60 ether);
-        assertEq(vat.gem("ETH", bytes32(address(handler))), mul(ONE, 0.5 ether));
-        assertEq(vat.dai(bytes32(address(handler))), mul(ONE, 60 ether));
+        this.frob(pit, bytes32(uint(address(handler))), "ETH", 0.5 ether, 60 ether);
+        assertEq(vat.gem("ETH", bytes32(uint(address(handler)))), mul(ONE, 0.5 ether));
+        assertEq(vat.dai(bytes32(uint(address(handler)))), mul(ONE, 60 ether));
 
         this.daiJoin_exit(daiJoin, address(this), 60 ether);
         assertEq(dai.balanceOf(address(this)), 60 ether);
@@ -215,17 +215,17 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
 
     function testCdpHandlerFrobWipe() public {
         deploy();
-        this.ethJoin_join.value(1 ether)(ethJoin, bytes32(address(handler)));
-        this.frob(pit, "ETH", 0.5 ether, 60 ether);
+        this.ethJoin_join.value(1 ether)(ethJoin, bytes32(uint(address(handler))));
+        this.frob(pit, bytes32(uint(address(handler))), "ETH", 0.5 ether, 60 ether);
         this.daiJoin_exit(daiJoin, address(this), 60 ether);
         assertEq(dai.balanceOf(address(this)), 60 ether);
         dai.approve(handler, uint(-1));
-        this.daiJoin_join(daiJoin, bytes32(address(handler)), 60 ether);
+        this.daiJoin_join(daiJoin, bytes32(uint(address(handler))), 60 ether);
         assertEq(dai.balanceOf(address(this)), 0);
 
-        assertEq(vat.dai(bytes32(address(handler))), mul(ONE, 60 ether));
-        this.frob(pit, "ETH", 0 ether, -60 ether);
-        assertEq(vat.dai(bytes32(address(handler))), 0);
+        assertEq(vat.dai(bytes32(uint(address(handler)))), mul(ONE, 60 ether));
+        this.frob(pit, bytes32(uint(address(handler))), "ETH", 0 ether, -60 ether);
+        assertEq(vat.dai(bytes32(uint(address(handler)))), 0);
     }
 
     function testCdpHandlerLockETH() public {
@@ -272,7 +272,7 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         assertEq(dai.balanceOf(this), 0);
         this.draw(daiJoin, pit, "ETH", address(this), 300 ether);
         assertEq(dai.balanceOf(this), 300 ether);
-        (, uint art) = vat.urns("ETH", bytes32(address(handler)));
+        (, uint art) = vat.urns("ETH", bytes32(uint(address(handler))));
         assertEq(art, 300 ether);
     }
 
@@ -285,7 +285,7 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         assertEq(dai.balanceOf(this), 0);
         this.draw(daiJoin, pit, "ETH", address(this), 300 ether);
         assertEq(dai.balanceOf(this), 300 ether);
-        (, uint art) = vat.urns("ETH", bytes32(address(handler)));
+        (, uint art) = vat.urns("ETH", bytes32(uint(address(handler))));
         assertEq(art, mul(300 ether, ONE) / (1.05 * 10 ** 27) + 1); // Extra wei due rounding
     }
 
@@ -308,7 +308,7 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         dai.approve(handler, 100 ether);
         this.wipe(daiJoin, pit, "ETH", 100 ether);
         assertEq(dai.balanceOf(this), 200 ether);
-        (, uint art) = vat.urns("ETH", bytes32(address(handler)));
+        (, uint art) = vat.urns("ETH", bytes32(uint(address(handler))));
         assertEq(art, mul(200 ether, ONE) / (1.05 * 10 ** 27) + 1);
     }
 
@@ -321,7 +321,7 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         this.draw(daiJoin, pit, "ETH", address(this), 300 ether);
         dai.approve(handler, 300 ether);
         this.wipe(daiJoin, pit, "ETH", 300 ether);
-        (, uint art) = vat.urns("ETH", bytes32(address(handler)));
+        (, uint art) = vat.urns("ETH", bytes32(uint(address(handler))));
         assertEq(art, 0);
     }
 
@@ -337,7 +337,7 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         }
         dai.approve(handler, 300 ether * times);
         this.wipe(daiJoin, pit, "ETH", 300 ether * times);
-        (, uint art) = vat.urns("ETH", bytes32(address(handler)));
+        (, uint art) = vat.urns("ETH", bytes32(uint(address(handler))));
         assertEq(art, 0);
     }
 
