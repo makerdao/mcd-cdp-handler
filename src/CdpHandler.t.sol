@@ -38,6 +38,46 @@ contract ProxyCalls {
     function frob(address, bytes32, int, int) public {
         handler.execute(lib, msg.data);
     }
+
+    function lockETH(address, address) public payable {
+        assert(address(handler).call.value(msg.value)(bytes4(keccak256("execute(address,bytes)")), lib, uint256(0x40), msg.data.length, msg.data));
+    }
+
+    function lockGem(address, address, bytes32, uint) public {
+        handler.execute(lib, msg.data);
+    }
+
+    function freeETH(address, address, address, uint) public {
+        handler.execute(lib, msg.data);
+    }
+
+    function freeGem(address, address, bytes32, address, uint) public {
+        handler.execute(lib, msg.data);
+    }
+
+    function draw(address, address, bytes32, address, uint) public {
+        handler.execute(lib, msg.data);
+    }
+
+    function wipe(address, address, bytes32, uint) public {
+        handler.execute(lib, msg.data);
+    }
+
+    function lockETHAndDraw(address, address, address, address, uint) public payable {
+        assert(address(handler).call.value(msg.value)(bytes4(keccak256("execute(address,bytes)")), lib, uint256(0x40), msg.data.length, msg.data));
+    }
+
+    function lockGemAndDraw(address, address, address, bytes32, address, uint, uint) public {
+        handler.execute(lib, msg.data);
+    }
+
+    function wipeAndFreeETH(address, address, address, address, uint, uint) public {
+        handler.execute(lib, msg.data);
+    }
+
+    function wipeAndFreeGem(address, address, address, bytes32, address, uint, uint) public {
+        handler.execute(lib, msg.data);
+    }
 }
 
 contract MaliciousHandler is CdpHandler {
@@ -62,6 +102,10 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         registry = new CdpRegistry();
         handler = CdpHandler(registry.build());
         user = new FakeUser();
+    }
+
+    function ink(bytes32 ilk, address urn) public returns (uint inkV) {
+        (inkV,) = vat.urns(ilk, bytes32(urn));
     }
 
     function testCdpHandlerCreateMultipleHandlers() public {
@@ -182,5 +226,164 @@ contract CdpHandlerTest is DssDeployTest, ProxyCalls {
         assertEq(vat.dai(bytes32(address(handler))), mul(ONE, 60 ether));
         this.frob(pit, "ETH", 0 ether, -60 ether);
         assertEq(vat.dai(bytes32(address(handler))), 0);
+    }
+
+    function testCdpHandlerLockETH() public {
+        deploy();
+        uint initialBalance = address(this).balance;
+        assertEq(ink("ETH", address(handler)), 0);
+        this.lockETH.value(2 ether)(ethJoin, pit);
+        assertEq(ink("ETH", address(handler)), 2 ether);
+        assertEq(address(this).balance, initialBalance - 2 ether);
+    }
+
+    function testCdpHandlerLockGem() public {
+        deploy();
+        dgx.mint(5 ether);
+        dgx.approve(handler, 2 ether);
+        assertEq(ink("DGX", handler), 0);
+        this.lockGem(dgxJoin, pit, "DGX", 2 ether);
+        assertEq(ink("DGX", handler), 2 ether);
+        assertEq(dgx.balanceOf(this), 3 ether);
+    }
+
+    function testCdpHandlerfreeETH() public {
+        deploy();
+        uint initialBalance = address(this).balance;
+        this.lockETH.value(2 ether)(ethJoin, pit);
+        this.freeETH(ethJoin, pit, address(this), 1 ether);
+        assertEq(ink("ETH", handler), 1 ether);
+        assertEq(address(this).balance, initialBalance - 1 ether);
+    }
+
+    function testCdpHandlerfreeGem() public {
+        deploy();
+        dgx.mint(5 ether);
+        dgx.approve(handler, 2 ether);
+        this.lockGem(dgxJoin, pit, "DGX", 2 ether);
+        this.freeGem(dgxJoin, pit, "DGX", address(this), 1 ether);
+        assertEq(ink("DGX", handler), 1 ether);
+        assertEq(dgx.balanceOf(this), 4 ether);
+    }
+
+    function testCdpHandlerDraw() public {
+        deploy();
+        this.lockETH.value(2 ether)(ethJoin, pit);
+        assertEq(dai.balanceOf(this), 0);
+        this.draw(daiJoin, pit, "ETH", address(this), 300 ether);
+        assertEq(dai.balanceOf(this), 300 ether);
+        (, uint art) = vat.urns("ETH", bytes32(address(handler)));
+        assertEq(art, 300 ether);
+    }
+
+    function testCdpHandlerDrawAfterDrip() public {
+        deploy();
+        this.file(address(drip), bytes32("ETH"), bytes32("tax"), uint(1.05 * 10 ** 27));
+        hevm.warp(now + 1);
+        drip.drip("ETH");
+        this.lockETH.value(2 ether)(ethJoin, pit);
+        assertEq(dai.balanceOf(this), 0);
+        this.draw(daiJoin, pit, "ETH", address(this), 300 ether);
+        assertEq(dai.balanceOf(this), 300 ether);
+        (, uint art) = vat.urns("ETH", bytes32(address(handler)));
+        assertEq(art, mul(300 ether, ONE) / (1.05 * 10 ** 27) + 1); // Extra wei due rounding
+    }
+
+    function testCdpHandlerWipe() public {
+        deploy();
+        this.lockETH.value(2 ether)(ethJoin, pit);
+        this.draw(daiJoin, pit, "ETH", address(this), 300 ether);
+        dai.approve(handler, 100 ether);
+        this.wipe(daiJoin, pit, "ETH", 100 ether);
+        assertEq(dai.balanceOf(this), 200 ether);
+    }
+
+    function testCdpHandlerWipeAfterDrip() public {
+        deploy();
+        this.file(address(drip), bytes32("ETH"), bytes32("tax"), uint(1.05 * 10 ** 27));
+        hevm.warp(now + 1);
+        drip.drip("ETH");
+        this.lockETH.value(2 ether)(ethJoin, pit);
+        this.draw(daiJoin, pit, "ETH", address(this), 300 ether);
+        dai.approve(handler, 100 ether);
+        this.wipe(daiJoin, pit, "ETH", 100 ether);
+        assertEq(dai.balanceOf(this), 200 ether);
+        (, uint art) = vat.urns("ETH", bytes32(address(handler)));
+        assertEq(art, mul(200 ether, ONE) / (1.05 * 10 ** 27) + 1);
+    }
+
+    function testCdpHandlerWipeAllAfterDrip() public {
+        deploy();
+        this.file(address(drip), bytes32("ETH"), bytes32("tax"), uint(1.05 * 10 ** 27));
+        hevm.warp(now + 1);
+        drip.drip("ETH");
+        this.lockETH.value(2 ether)(ethJoin, pit);
+        this.draw(daiJoin, pit, "ETH", address(this), 300 ether);
+        dai.approve(handler, 300 ether);
+        this.wipe(daiJoin, pit, "ETH", 300 ether);
+        (, uint art) = vat.urns("ETH", bytes32(address(handler)));
+        assertEq(art, 0);
+    }
+
+    function testCdpHandlerWipeAllAfterDrip2() public {
+        deploy();
+        this.file(address(drip), bytes32("ETH"), bytes32("tax"), uint(1.05 * 10 ** 27));
+        hevm.warp(now + 1);
+        drip.drip("ETH");
+        uint times = 30;
+        this.lockETH.value(2 ether * times)(ethJoin, pit);
+        for (uint i = 0; i < times; i++) {
+            this.draw(daiJoin, pit, "ETH", address(this), 300 ether);
+        }
+        dai.approve(handler, 300 ether * times);
+        this.wipe(daiJoin, pit, "ETH", 300 ether * times);
+        (, uint art) = vat.urns("ETH", bytes32(address(handler)));
+        assertEq(art, 0);
+    }
+
+    function testCdpHandlerLockETHAndDraw() public {
+        deploy();
+        uint initialBalance = address(this).balance;
+        assertEq(ink("ETH", handler), 0);
+        assertEq(dai.balanceOf(this), 0);
+        this.lockETHAndDraw.value(2 ether)(ethJoin, daiJoin, pit, address(this), 300 ether);
+        assertEq(ink("ETH", handler), 2 ether);
+        assertEq(dai.balanceOf(this), 300 ether);
+        assertEq(address(this).balance, initialBalance - 2 ether);
+    }
+
+    function testCdpHandlerLockGemAndDraw() public {
+        deploy();
+        dgx.mint(5 ether);
+        dgx.approve(handler, 2 ether);
+        assertEq(ink("DGX", handler), 0);
+        assertEq(dai.balanceOf(this), 0);
+        this.lockGemAndDraw(dgxJoin, daiJoin, pit, "DGX", address(this), 2 ether, 10 ether);
+        assertEq(ink("DGX", handler), 2 ether);
+        assertEq(dai.balanceOf(this), 10 ether);
+        assertEq(dgx.balanceOf(this), 3 ether);
+    }
+
+    function testCdpHandlerWipeAndFreeETH() public {
+        deploy();
+        uint initialBalance = address(this).balance;
+        this.lockETHAndDraw.value(2 ether)(ethJoin, daiJoin, pit, address(this), 300 ether);
+        dai.approve(handler, 250 ether);
+        this.wipeAndFreeETH(ethJoin, daiJoin, pit, address(this), 1.5 ether, 250 ether);
+        assertEq(ink("ETH", handler), 0.5 ether);
+        assertEq(dai.balanceOf(this), 50 ether);
+        assertEq(address(this).balance, initialBalance - 0.5 ether);
+    }
+
+    function testCdpHandlerWipeAndFreeGem() public {
+        deploy();
+        dgx.mint(5 ether);
+        dgx.approve(handler, 2 ether);
+        this.lockGemAndDraw(dgxJoin, daiJoin, pit, "DGX", address(this), 2 ether, 10 ether);
+        dai.approve(handler, 8 ether);
+        this.wipeAndFreeGem(dgxJoin, daiJoin, pit, "DGX", address(this), 1.5 ether, 8 ether);
+        assertEq(ink("DGX", handler), 0.5 ether);
+        assertEq(dai.balanceOf(this), 2 ether);
+        assertEq(dgx.balanceOf(this), 4.5 ether);
     }
 }
