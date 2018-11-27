@@ -36,7 +36,7 @@ contract CdpLib {
     }
 
     function gemJoin_join(address apt, bytes32 urn, uint wad) public payable {
-        GemJoinLike(apt).gem().transferFrom(msg.sender, this, wad);
+        GemJoinLike(apt).gem().transferFrom(msg.sender, address(this), wad);
         GemJoinLike(apt).gem().approve(apt, uint(-1));
         GemJoinLike(apt).join(urn, wad);
     }
@@ -46,7 +46,7 @@ contract CdpLib {
     }
 
     function daiJoin_join(address apt, bytes32 urn, uint wad) public {
-        DaiJoinLike(apt).dai().transferFrom(msg.sender, this, wad);
+        DaiJoinLike(apt).dai().transferFrom(msg.sender, address(this), wad);
         DaiJoinLike(apt).dai().approve(apt, uint(-1));
         DaiJoinLike(apt).join(urn, wad);
     }
