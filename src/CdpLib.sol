@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.4.24;
+pragma solidity >=0.5.0;
 
 contract GemLike {
     function approve(address, uint) public;
@@ -85,7 +85,7 @@ contract CdpLib {
         uint wad
     ) internal view returns (int dart) {
         (, uint rate) = PitLike(pit).vat().ilks(ilk);
-        uint dai = PitLike(pit).vat().dai(bytes32(uint(address(this))));
+        uint dai = PitLike(pit).vat().dai(bytes32(bytes20(address(this))));
 
         if (dai < mul(wad, ONE)) {
             // If there was already enough DAI generated but not extracted as token, ignore this statement and do the exit directly
@@ -99,7 +99,7 @@ contract CdpLib {
         address pit,
         bytes32 ilk
     ) internal view returns (int dart) {
-        uint dai = PitLike(pit).vat().dai(bytes32(uint(address(this))));
+        uint dai = PitLike(pit).vat().dai(bytes32(bytes20(address(this))));
         (, uint rate) = PitLike(pit).vat().ilks(ilk);
         // Decrease the whole allocated dai balance: dai / rate
         dart = - int(dai / rate);
@@ -142,8 +142,8 @@ contract CdpLib {
         address ethJoin,
         address pit
     ) public payable {
-        ethJoin_join(ethJoin, bytes32(uint(address(this))));
-        frob(pit, bytes32(uint(address(this))), "ETH", _getLockDink(pit, "ETH", msg.value), 0);
+        ethJoin_join(ethJoin, bytes32(bytes20(address(this))));
+        frob(pit, bytes32(bytes20(address(this))), "ETH", _getLockDink(pit, "ETH", msg.value), 0);
     }
 
     function lockGem(
@@ -152,8 +152,8 @@ contract CdpLib {
         bytes32 ilk,
         uint wad
     ) public {
-        gemJoin_join(gemJoin, bytes32(uint(address(this))), wad);
-        frob(pit, bytes32(uint(address(this))), ilk, _getLockDink(pit, ilk, wad), 0);
+        gemJoin_join(gemJoin, bytes32(bytes20(address(this))), wad);
+        frob(pit, bytes32(bytes20(address(this))), ilk, _getLockDink(pit, ilk, wad), 0);
     }
 
     function freeETH(
@@ -162,7 +162,7 @@ contract CdpLib {
         address guy,
         uint wad
     ) public {
-        frob(pit, bytes32(uint(address(this))), "ETH", _getFreeDink(pit, "ETH", wad), 0);
+        frob(pit, bytes32(bytes20(address(this))), "ETH", _getFreeDink(pit, "ETH", wad), 0);
         ethJoin_exit(ethJoin, guy, wad);
     }
 
@@ -173,7 +173,7 @@ contract CdpLib {
         address guy,
         uint wad
     ) public {
-        frob(pit, bytes32(uint(address(this))), ilk, _getFreeDink(pit, ilk, wad), 0);
+        frob(pit, bytes32(bytes20(address(this))), ilk, _getFreeDink(pit, ilk, wad), 0);
         gemJoin_exit(gemJoin, guy, wad);
     }
 
@@ -184,7 +184,7 @@ contract CdpLib {
         address guy,
         uint wad
     ) public {
-        frob(pit, bytes32(uint(address(this))), ilk, 0, _getDrawDart(pit, ilk, wad));
+        frob(pit, bytes32(bytes20(address(this))), ilk, 0, _getDrawDart(pit, ilk, wad));
         daiJoin_exit(daiJoin, guy, wad);
     }
 
@@ -194,8 +194,8 @@ contract CdpLib {
         bytes32 ilk,
         uint wad
     ) public {
-        daiJoin_join(daiJoin, bytes32(uint(address(this))), wad);
-        frob(pit, bytes32(uint(address(this))), ilk, 0, _getWipeDart(pit, ilk));
+        daiJoin_join(daiJoin, bytes32(bytes20(address(this))), wad);
+        frob(pit, bytes32(bytes20(address(this))), ilk, 0, _getWipeDart(pit, ilk));
     }
 
     function lockETHAndDraw(
@@ -205,8 +205,8 @@ contract CdpLib {
         address guy,
         uint wadD
     ) public payable {
-        ethJoin_join(ethJoin, bytes32(uint(address(this))));
-        frob(pit, bytes32(uint(address(this))), "ETH", _getLockDink(pit, "ETH", msg.value), _getDrawDart(pit, "ETH", wadD));
+        ethJoin_join(ethJoin, bytes32(bytes20(address(this))));
+        frob(pit, bytes32(bytes20(address(this))), "ETH", _getLockDink(pit, "ETH", msg.value), _getDrawDart(pit, "ETH", wadD));
         daiJoin_exit(daiJoin, guy, wadD);
     }
 
@@ -219,8 +219,8 @@ contract CdpLib {
         uint wadC,
         uint wadD
     ) public {
-        gemJoin_join(gemJoin, bytes32(uint(address(this))), wadC);
-        frob(pit, bytes32(uint(address(this))), ilk, _getLockDink(pit, ilk, wadC), _getDrawDart(pit, ilk, wadD));
+        gemJoin_join(gemJoin, bytes32(bytes20(address(this))), wadC);
+        frob(pit, bytes32(bytes20(address(this))), ilk, _getLockDink(pit, ilk, wadC), _getDrawDart(pit, ilk, wadD));
         daiJoin_exit(daiJoin, guy, wadD);
     }
 
@@ -232,8 +232,8 @@ contract CdpLib {
         uint wadC,
         uint wadD
     ) public {
-        daiJoin_join(daiJoin, bytes32(uint(address(this))), wadD);
-        frob(pit, bytes32(uint(address(this))), "ETH", _getFreeDink(pit, "ETH", wadC), _getWipeDart(pit, "ETH"));
+        daiJoin_join(daiJoin, bytes32(bytes20(address(this))), wadD);
+        frob(pit, bytes32(bytes20(address(this))), "ETH", _getFreeDink(pit, "ETH", wadC), _getWipeDart(pit, "ETH"));
         ethJoin_exit(ethJoin, guy, wadC);
     }
 
@@ -246,8 +246,8 @@ contract CdpLib {
         uint wadC,
         uint wadD
     ) public {
-        daiJoin_join(daiJoin, bytes32(uint(address(this))), wadD);
-        frob(pit, bytes32(uint(address(this))), ilk, _getFreeDink(pit, ilk, wadC), _getWipeDart(pit, ilk));
+        daiJoin_join(daiJoin, bytes32(bytes20(address(this))), wadD);
+        frob(pit, bytes32(bytes20(address(this))), ilk, _getFreeDink(pit, ilk, wadC), _getWipeDart(pit, ilk));
         gemJoin_exit(gemJoin, guy, wadC);
     }
 }

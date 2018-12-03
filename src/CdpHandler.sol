@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.4.24;
+pragma solidity >=0.5.0;
 
 import "ds-proxy/proxy.sol";
 
@@ -24,7 +24,7 @@ contract CdpHandler is DSProxy {
 
     event Approval(address indexed src, address indexed guy, bool status);
 
-    constructor(address _registry, address _owner) public DSProxy(CdpRegistry(_registry).cache()) {
+    constructor(address _registry, address _owner) public DSProxy(address(CdpRegistry(_registry).cache())) {
         registry = CdpRegistry(_registry);
         owner = _owner;
     }
@@ -36,7 +36,7 @@ contract CdpHandler is DSProxy {
 }
 
 contract CdpRegistry is DSProxyFactory {
-    mapping(address => CdpHandler[]) public handlers;
+    mapping(address => address payable []) public handlers;
     mapping(address => uint) public pos;
     mapping(address => bool) public inRegistry;
 
@@ -44,20 +44,19 @@ contract CdpRegistry is DSProxyFactory {
         count = handlers[owner].length;
     }
 
-    function build() public returns (address handler) {
+    function build() public returns (address payable handler) {
         handler = build(msg.sender);
     }
 
-    function build(address owner) public returns (address handler) {
-        handler = new CdpHandler(this, owner);
-        pos[handler] = handlers[owner].push(CdpHandler(handler)) - 1;
+    function build(address owner) public returns (address payable handler) {
+        handler = address(new CdpHandler(address(this), owner));
+        pos[handler] = handlers[owner].push(handler) - 1;
         inRegistry[handler] = true;
     }
 
     function setOwner(address owner_) public {
         require(inRegistry[msg.sender], "Sender is not a CdpHandler from the Registry");
-        CdpHandler handler = CdpHandler(msg.sender);
-        delete handlers[handler.owner()][pos[handler]];
-        pos[handler] = handlers[owner_].push(handler) - 1;
+        delete handlers[CdpHandler(msg.sender).owner()][pos[msg.sender]];
+        pos[msg.sender] = handlers[owner_].push(msg.sender) - 1;
     }
 }
